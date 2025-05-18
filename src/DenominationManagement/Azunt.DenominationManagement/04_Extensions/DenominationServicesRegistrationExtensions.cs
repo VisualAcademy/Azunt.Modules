@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Azunt.Models.Enums;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -9,16 +10,6 @@ namespace Azunt.DenominationManagement;
 /// </summary>
 public static class DenominationServicesRegistrationExtensions
 {
-    /// <summary>
-    /// 선택 가능한 저장소 모드 정의
-    /// </summary>
-    public enum RepositoryMode
-    {
-        EfCore,
-        Dapper,
-        AdoNet
-    }
-
     /// <summary>
     /// DenominationApp 모듈의 서비스를 등록합니다.
     /// </summary>
