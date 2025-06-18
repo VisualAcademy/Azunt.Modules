@@ -10,20 +10,26 @@ public static class RuleSeeder
         using var connection = new SqlConnection(connectionString);
         connection.Open();
 
-        // 0. 필수 테이블 존재 여부 확인
+        // 0. Required table existence check
         if (!TableExists(connection, "AspNetRoles"))
         {
-            logger.LogWarning("AspNetRoles 테이블이 없어 권한 시드를 건너뜁니다.");
+            logger.LogWarning("AspNetRoles table does not exist. Skipping Administrator role seeding.");
             return;
         }
 
         if (!TableExists(connection, "Rules"))
         {
-            logger.LogWarning("Rules 테이블이 없어 권한 시드를 건너뜁니다.");
+            logger.LogWarning("Rules table does not exist. Skipping Administrator role seeding.");
             return;
         }
 
-        // 1. Administrators 역할 ID 조회
+        if (!TableExists(connection, "Resources"))
+        {
+            logger.LogWarning("Resources table does not exist. Skipping Administrator role seeding.");
+            return;
+        }
+
+        // 1. Retrieve Administrators role ID
         var getRoleIdCmd = new SqlCommand(@"
             SELECT TOP 1 Id FROM AspNetRoles WHERE NormalizedName = 'ADMINISTRATORS'", connection);
 
@@ -31,11 +37,11 @@ public static class RuleSeeder
 
         if (string.IsNullOrWhiteSpace(roleId))
         {
-            logger.LogWarning("Administrators 역할이 존재하지 않아 권한 시드를 건너뜁니다.");
+            logger.LogWarning("Administrators role does not exist. Skipping rule seeding.");
             return;
         }
 
-        // 2. 모든 리소스 ID 조회
+        // 2. Retrieve all Resource IDs
         var resourceIds = new List<int>();
         using (var getResourcesCmd = new SqlCommand("SELECT Id FROM Resources", connection))
         using (var reader = getResourcesCmd.ExecuteReader())
@@ -46,7 +52,7 @@ public static class RuleSeeder
             }
         }
 
-        // 3. Rules 삽입 (중복 제외)
+        // 3. Insert rules (if not already present)
         foreach (var resourceId in resourceIds)
         {
             var checkCmd = new SqlCommand(@"
@@ -73,10 +79,10 @@ public static class RuleSeeder
             insertCmd.Parameters.AddWithValue("@AccountId", roleId);
 
             insertCmd.ExecuteNonQuery();
-            logger.LogInformation($"[INSERT] Role 'Administrators' granted full access to ResourceId={resourceId}");
+            logger.LogInformation($"[INSERT] Full permissions granted to 'Administrators' for ResourceId = {resourceId}");
         }
 
-        logger.LogInformation("Administrators 역할에 대한 Rules 권한 삽입 완료.");
+        logger.LogInformation("Administrator role permissions seeding completed.");
     }
 
     private static bool TableExists(SqlConnection connection, string tableName)
